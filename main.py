@@ -1,135 +1,132 @@
 #git 1
-import re
+import re, os
+
 def print_hi():
 
-    #print(getValidUsers(cont[3]))
-    #print (getDataByFolder('[Проектно-Строительные работы]'))
-    #print (getDataByUser('andreishmelev', 'read list'))
-    #print(getDataSection(getSections(),1))
-    #print(getUserSmb())
-    # for user in getUserSmb():
-    #     if len(getDataByUser(user, 'write list'))>0:
-    #         print (user, getDataByUser(user, 'write list'))
-    #print(getAllDataUserByTypeData())
-    userData = getAllDataUserByTypeData('admin')
-    #print(userData)
+    parserQnap = ParserQnapSmb()
+    userData = parserQnap.getAllDataUser('a')
+    print(userData)
+    #print(parserQnap.getDataByUser('usachev'))
+    print(parserQnap.getDataByFolder('Download'))
 
-    for user in getUsersSmb():
-        userData = getAllDataUserByTypeData(user)
-        if len(userData['read list'])!=0:
-            print(userData['user'], userData['read list'])
+class ParserQnapSmb:
+    def __init__(self, filePathSmb='smb.conf', filePathPasswd='smbpasswd'):
 
-# Возвращает  все данные  по пользователю
-def getAllDataUserByTypeData(user):
+        if os.path.exists(filePathSmb) & os.path.exists(filePathPasswd):
+            self.filePathSmb = filePathSmb
+            self.filePathPasswd = filePathPasswd
+        else:
+            print('Файлы ', 'не обнаружены')
+            exit(0)
 
-    res = dict()
-    res['user'] = user
-    res['write list'] = getDataByUser(user, 'write list')
-    res['read list'] = getDataByUser(user, 'read list')
-    res['valid users'] = getDataByUser(user, 'valid users')
-    res['invalid users'] = getDataByUser(user, 'invalid users')
+    # Возвращает  все данные  по пользователю
+    def getAllDataUser(self, user):
+        res = dict()
+        res['user'] = user
+        res['write list'] = self.getDataByUser(user, 'write list')
+        res['read list'] = self.getDataByUser(user, 'read list')
+        res['valid users'] = self.getDataByUser(user, 'valid users')
+        res['invalid users'] = self.getDataByUser(user, 'invalid users')
+        return res
 
-    return res
+    # Возвращает запрашиваемые данные по имени пользователя
+    # user - Имя пользователя
+    # typeData - Тип запрашиваемых данных: write list, read list, valid users, invalid users
+    def getDataByUser(self, user, typeData='write list'):
+        typeClear = typeData
+        if typeData=='write list':
+            typeData = 3
+        elif typeData == 'read list':
+            typeData = 2
+        elif typeData == 'valid users':
+            typeData = 4
+        elif typeData == 'invalid users':
+            typeData = 1
 
-# Возвращает запрашиваемые данные по имени пользователя
-# user - Имя пользователя
-# typeData - Тип запрашиваемых данных: write list, read list, valid users, invalid users
-def getDataByUser(user, typeData='write list'):
-    typeClear = typeData
-    if typeData=='write list':
-        typeData = 3
-    elif typeData == 'read list':
-        typeData = 2
-    elif typeData == 'valid users':
-        typeData = 4
-    elif typeData == 'invalid users':
-        typeData = 1
+        sections = self.__getSections()
+        userFolder=[]
+        i = 1
+        while i < len(sections):
+            section = self.__getDataSection(sections, i)
+            if section[0] != '[share_geo]':
+                if user in self.__getClearData(section[typeData], typeClear):
+                    userFolder.append(self.__getShareFolder(section[0]))
+            i += 1
+        return userFolder
 
-    sections = getSections()
-    userFolder=[]
-    i = 1
-    while i < len(sections):
-        section = getDataSection(sections, i)
-        if section[0] != '[share_geo]':
-            #print(section[0], getWriteList(section[2]))
-            if user in getClearData(section[typeData], typeClear):
-                userFolder.append(getShareFolder(section[0]))
-        i += 1
-    return userFolder
+    #  Возвращает данные по имени общей папки, например: '[Public]'
+    def getDataByFolder(self, folderName):
 
-#  Возвращает данные по имени общей папки, например: '[Public]'
-def getDataByFolder(folderName):
-    sections = getSections()
-    i = 1
-    while i<len(sections):
+        sections = self.__getSections()
+        i = 1
+        while i<len(sections):
+            section = self.__getDataSection(sections, i)
+            i += 1
+            if section[0] == '['+folderName+']':
+                #print(folders)
+                return section
+                break
 
-        section = getDataSection(sections, i)
-        i += 1
-        if section[0] == folderName:
-            #print(folders)
-            return section
-            break
+    # Возвращает список пользователей из smbpasswd
+    def getUsersSmb(self):
+        lines = open(self.filePathPasswd, 'r').readlines()
+        userList = []
 
-# Возвращает секцию со строками [название папки]-0, write list-1, read list-2, valid users-3
-# listSections - список секций
-# iter - номер в списке
-def getDataSection(listSections, iter):
-    data = re.findall(r'(\[.*\]|write list = .*|read list = .*|\bvalid users = .*|invalid users = .*)',
-                                                                listSections[iter], flags=re.MULTILINE)
-    return data
+        for line in lines:
+            userList.append(line.split(':')[0])
+        return userList
 
-# Возвращает список секций из файла
-def getSections(fPath = 'smb.conf'):
-    fileText = open(fPath, 'r', encoding="UTF-8").read()
-    sections = fileText.split('\n\n')
-    return sections
+    # Возвращает секцию со строками [название папки]-0, write list-1, read list-2, valid users-3
+    # listSections - список секций
+    # iter - номер в списке
+    def __getDataSection(self, listSections, iter):
+        data = re.findall(r'(\[.*\]|write list = .*|read list = .*|\bvalid users = .*|invalid users = .*)',
+                                                                    listSections[iter], flags=re.MULTILINE)
+        return data
 
-# Возвращает список пользователей из smbpasswd
-def getUsersSmb(fPath='smbpasswd'):
-    lines = open(fPath,'r').readlines()
-    userList = []
+    # Возвращает список секций из файла
+    def __getSections(self):
+        fileText = open(self.filePathSmb, 'r', encoding="UTF-8").read()
+        sections = fileText.split('\n\n')
+        return sections
 
-    for line in lines:
-      userList.append(line.split(':')[0])
+    # Возвращает название общей папки без скобок
+    def __getShareFolder(self, string):
+        return str (string).rstrip(']').lstrip('[')
 
-    return userList
+    # Возвращает список пользователей в строке getReadList
+    def __getReadList(self, string):
+        stringRemoveName = string[12:]
+        stringRemoveCov = str(stringRemoveName).replace('"', '')
+        return stringRemoveCov.split(',')
 
-# Возвращает название общей папки без скобок
-def getShareFolder(string):
-    return str (string).rstrip(']').lstrip('[')
+    # Возвращает список пользователей в строке getWriteList
+    def __getWriteList(self, string):
+        stringRemoveName = string[13:]
+        stringRemoveCov = str (stringRemoveName).replace('"','')
+        return stringRemoveCov.split(',')
 
-# Возвращает список пользователей в строке getReadList
-def getReadList(string):
-    stringRemoveName = string[12:]
-    stringRemoveCov = str(stringRemoveName).replace('"', '')
-    return stringRemoveCov.split(',')
+    # Возвращает список пользователей в строке getValidUsers
+    def __getValidUsers(self, string):
+        stringRemoveName = string[14:]
+        stringRemoveCov = str(stringRemoveName).replace('"', '')
+        return stringRemoveCov.split(',')
 
-# Возвращает список пользователей в строке getWriteList
-def getWriteList(string):
-    stringRemoveName = string[13:]
-    stringRemoveCov = str (stringRemoveName).replace('"','')
-    return stringRemoveCov.split(',')
+    def __getInvalidUsers(self,string):
+        stringRemoveName = string[16:]
+        stringRemoveCov = str(stringRemoveName).replace('"', '')
+        return stringRemoveCov.split(',')
 
-# Возвращает список пользователей в строке getValidUsers
-def getValidUsers(string):
-    stringRemoveName = string[14:]
-    stringRemoveCov = str(stringRemoveName).replace('"', '')
-    return stringRemoveCov.split(',')
+    def __getClearData(self, string, typeClear):
+        if typeClear == 'write list':
+            return self.__getWriteList(string)
+        elif typeClear == 'read list':
+            return self.__getReadList(string)
+        elif typeClear == 'valid users':
+            return self.__getValidUsers(string)
+        elif typeClear == 'invalid users':
+            return self.__getInvalidUsers(string)
 
-def getInvalidUsers(string):
-    stringRemoveName = string[16:]
-    stringRemoveCov = str(stringRemoveName).replace('"', '')
-    return stringRemoveCov.split(',')
-
-def getClearData(string, typeClear):
-    if typeClear == 'write list':
-        return getWriteList(string)
-    elif typeClear == 'read list':
-        return getReadList(string)
-    elif typeClear == 'valid users':
-        return getValidUsers(string)
-    elif typeClear == 'invalid users':
-        return getInvalidUsers(string)
 
 
 # Press the green button in the gutter to run the script.
