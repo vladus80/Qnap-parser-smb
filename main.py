@@ -1,14 +1,10 @@
 #git 1
 import re, os
 
-
 def print_hi():
 
     parserQnap = ParserQnapSmb()
-    userData = parserQnap.getAllDataUser('a')
-    print(userData)
-    #print(parserQnap.getDataByUser('usachev'))
-    print(parserQnap.getDataByFolder('Download'))
+    print(parserQnap.getFolders())
 
 class ParserQnapSmb:
     def __init__(self, filePathSmb='smb.conf', filePathPasswd='smbpasswd'):
@@ -24,16 +20,16 @@ class ParserQnapSmb:
     def getAllDataUser(self, user):
         res = dict()
         res['user'] = user
-        res['write list'] = self.getDataByUser(user, 'write list')
-        res['read list'] = self.getDataByUser(user, 'read list')
-        res['valid users'] = self.getDataByUser(user, 'valid users')
-        res['invalid users'] = self.getDataByUser(user, 'invalid users')
+        res['write list'] = self.__getDataUser(user, 'write list')
+        res['read list'] = self.__getDataUser(user, 'read list')
+        res['valid users'] = self.__getDataUser(user, 'valid users')
+        res['invalid users'] = self.__getDataUser(user, 'invalid users')
         return res
 
     # Возвращает запрашиваемые данные по имени пользователя
     # user - Имя пользователя
     # typeData - Тип запрашиваемых данных: write list, read list, valid users, invalid users
-    def getDataByUser(self, user, typeData='write list'):
+    def __getDataUser(self, user, typeData='write list'):
         typeClear = typeData
         if typeData=='write list':
             typeData = 3
@@ -67,6 +63,11 @@ class ParserQnapSmb:
                 #print(folders)
                 return section
                 break
+
+    # Возвращает общие папки
+    def getFolders(self):
+        data = re.findall(r'\[(.*)\]', open(self.filePathSmb, 'r', encoding="UTF-8").read(), flags=re.MULTILINE)
+        return data[1:]
 
     # Возвращает список пользователей из smbpasswd
     def getUsersSmb(self):
