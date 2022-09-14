@@ -1,7 +1,7 @@
 #re2
 import re, os
 
-def print_hi():
+def print_main():
 
     parserQnap = ParserQnapSmb()
     print(parserQnap.getFolders())
@@ -133,6 +133,6 @@ class ParserQnapSmb:
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print_hi()
+    print_main()
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
