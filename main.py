@@ -4,7 +4,7 @@ import re, os
 def print_main():
 
     parserQnap = ParserQnapSmb()
-    print(parserQnap.getFolders())
+    print(parserQnap.getUsers())
 
 class ParserQnapSmb:
     def __init__(self, filePathSmb='smb.conf', filePathPasswd='smbpasswd'):
@@ -70,7 +70,7 @@ class ParserQnapSmb:
         return data[1:]
 
     # Возвращает список пользователей из smbpasswd
-    def getUsersSmb(self):
+    def getUsers(self):
         lines = open(self.filePathPasswd, 'r').readlines()
         userList = []
 
