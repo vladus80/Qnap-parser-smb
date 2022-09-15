@@ -17,7 +17,6 @@ class ParserQnapSmb:
             print('Файлы ', 'не обнаружены')
             exit(0)
 
-
     def printMatrix(self):
 
         file = open('usersAccs.csv', 'w', encoding='windows-1251')
@@ -40,7 +39,7 @@ class ParserQnapSmb:
     def __isAccesUserToFolder(self, user, folder):
 
         # acces: 0 - нет доступа к папке; -1 доступ запрещен; 1 - только чтение; 2 - запись
-        acces = 0
+        acces = 'Нет доступа'
 
         userData = self.getAllDataUser(user)
         writeList = userData['write list']
@@ -49,13 +48,13 @@ class ParserQnapSmb:
         invalidUser = userData['invalid users']
 
         if folder in writeList:
-            acces = 2
+            acces = 'Запись'
         else:
             if folder in readList:
-                acces = 1
+                acces = 'Только чтение'
             else:
                 if folder in invalidUser:
-                    acces = -1
+                    acces = 'Доступ запрещен'
         return acces
 
     # Возвращает  все данные  по пользователю
