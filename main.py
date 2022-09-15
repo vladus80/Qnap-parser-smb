@@ -1,20 +1,25 @@
-#re2
+# re2
 import re, os
 
-def print_main():
 
+def print_main():
+    user = 'usachev'
     parserQnap = ParserQnapSmb()
-    dataUser = parserQnap.getAllDataUser('usachev')
+    dataUser = parserQnap.getAllDataUser(user)
     print(dataUser)
 
-    folders = parserQnap.getFolders()
+    parserQnap.printMatrix()
 
-    strRes = ''
-    for folder in folders:
-        acc = parserQnap.isAccesUserToFolder('usachev', folder)
-        print(folder, acc)
-        strRes +=';'+ str (acc)
-    print(strRes)
+    # folders = parserQnap.getFolders()
+    # strRes = ''
+    # for usr in parserQnap.getUsers():
+    #     for folder in folders:
+    #         acc = parserQnap.isAccesUserToFolder(usr, folder)
+    #         # print(folder, acc)
+    #         strRes += ';' + str(acc)
+    #     print(usr, strRes)
+    #     strRes = ''
+
 
 class ParserQnapSmb:
     def __init__(self, filePathSmb='smb.conf', filePathPasswd='smbpasswd'):
@@ -26,28 +31,45 @@ class ParserQnapSmb:
             print('Файлы ', 'не обнаружены')
             exit(0)
 
+    def printMatrix(self):
+
+        file = open('usersAccs.csv', 'w+', encoding='windows-1251')
+        folders = self.getFolders()
+        users = self.getUsers()
+        strRes = ''
+        topStr = ' ;'+str(folders).replace(',',';')+'\n'
+        file.write(topStr)
+        for usr in users:
+            for folder in folders:
+                acc = self.isAccesUserToFolder(usr, folder)
+                # print(folder, acc)
+                strRes += ';' + str(acc)
+            print(usr, strRes)
+            file.write(usr+strRes+'\n')
+
+            strRes = ''
+        file.close()
+
     def isAccesUserToFolder(self, user, folder):
 
-            # acces: 0 - нет доступа к папке; -1 доступ запрещен; 1 - только чтение; 2 - запись
-            acces = 0
+        # acces: 0 - нет доступа к папке; -1 доступ запрещен; 1 - только чтение; 2 - запись
+        acces = 0
 
-            userData = self.getAllDataUser(user)
-            writeList = userData['write list']
-            readList = userData['read list']
-            validUser = userData['valid users']
-            invalidUser = userData['invalid users']
+        userData = self.getAllDataUser(user)
+        writeList = userData['write list']
+        readList = userData['read list']
+        validUser = userData['valid users']
+        invalidUser = userData['invalid users']
 
-            if folder in writeList:
-                acces = 2
+        if folder in writeList:
+            acces = 2
+        else:
+            if folder in readList:
+                acces = 1
             else:
-                if folder in readList:
-                    acces = 1
-                else:
-                    if folder in invalidUser:
-                        acces = -1
-            return acces
-
-
+                if folder in invalidUser:
+                    acces = -1
+        return acces
 
     # Возвращает  все данные  по пользователю
     def getAllDataUser(self, user):
@@ -64,7 +86,7 @@ class ParserQnapSmb:
     # typeData - Тип запрашиваемых данных: write list, read list, valid users, invalid users
     def __getDataUser(self, user, typeData='write list'):
         typeClear = typeData
-        if typeData=='write list':
+        if typeData == 'write list':
             typeData = 3
         elif typeData == 'read list':
             typeData = 2
@@ -74,7 +96,7 @@ class ParserQnapSmb:
             typeData = 1
 
         sections = self.__getSections()
-        userFolder=[]
+        userFolder = []
         i = 1
         while i < len(sections):
             section = self.__getDataSection(sections, i)
@@ -89,11 +111,11 @@ class ParserQnapSmb:
 
         sections = self.__getSections()
         i = 1
-        while i<len(sections):
+        while i < len(sections):
             section = self.__getDataSection(sections, i)
             i += 1
-            if section[0] == '['+folderName+']':
-                #print(folders)
+            if section[0] == '[' + folderName + ']':
+                # print(folders)
                 return section
                 break
 
@@ -116,7 +138,7 @@ class ParserQnapSmb:
     # iter - номер в списке
     def __getDataSection(self, listSections, iter):
         data = re.findall(r'(\[.*\]|write list = .*|read list = .*|\bvalid users = .*|invalid users = .*)',
-                                                                    listSections[iter], flags=re.MULTILINE)
+                          listSections[iter], flags=re.MULTILINE)
         return data
 
     # Возвращает список секций из файла
@@ -127,7 +149,7 @@ class ParserQnapSmb:
 
     # Возвращает название общей папки без скобок
     def __getShareFolder(self, string):
-        return str (string).rstrip(']').lstrip('[')
+        return str(string).rstrip(']').lstrip('[')
 
     # Возвращает список пользователей в строке getReadList
     def __getReadList(self, string):
@@ -138,7 +160,7 @@ class ParserQnapSmb:
     # Возвращает список пользователей в строке getWriteList
     def __getWriteList(self, string):
         stringRemoveName = string[13:]
-        stringRemoveCov = str (stringRemoveName).replace('"','')
+        stringRemoveCov = str(stringRemoveName).replace('"', '')
         return stringRemoveCov.split(',')
 
     # Возвращает список пользователей в строке getValidUsers
@@ -147,7 +169,7 @@ class ParserQnapSmb:
         stringRemoveCov = str(stringRemoveName).replace('"', '')
         return stringRemoveCov.split(',')
 
-    def __getInvalidUsers(self,string):
+    def __getInvalidUsers(self, string):
         stringRemoveName = string[16:]
         stringRemoveCov = str(stringRemoveName).replace('"', '')
         return stringRemoveCov.split(',')
@@ -161,7 +183,6 @@ class ParserQnapSmb:
             return self.__getValidUsers(string)
         elif typeClear == 'invalid users':
             return self.__getInvalidUsers(string)
-
 
 
 # Press the green button in the gutter to run the script.
