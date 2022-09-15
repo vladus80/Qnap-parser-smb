@@ -5,10 +5,12 @@ import re, os
 def print_main():
 
     parserQnap = ParserQnapSmb()
-    parserQnap.printMatrix()
+    print(len(parserQnap.getFolders()))
+    print(parserQnap.getUsers())
+    #parserQnap.printMatrix()
 
 class ParserQnapSmb:
-    def __init__(self, filePathSmb='smb.conf', filePathPasswd='smbpasswd'):
+    def __init__(self, filePathSmb='smb.conf', filePathPasswd='passwd'):
 
         if os.path.exists(filePathSmb) & os.path.exists(filePathPasswd):
             self.filePathSmb = filePathSmb
@@ -105,18 +107,21 @@ class ParserQnapSmb:
                 return section
                 break
 
-    # Возвращает общие папки
+    # Возвращает общие папки из smb.conf
     def getFolders(self):
         data = re.findall(r'\[(.*)\]', open(self.filePathSmb, 'r', encoding="UTF-8").read(), flags=re.MULTILINE)
         return data[1:]
 
     # Возвращает список пользователей из smbpasswd
     def getUsers(self):
-        lines = open(self.filePathPasswd, 'r').readlines()
+        lines = open(self.filePathPasswd, 'r', encoding='UTF-8').readlines()
         userList = []
 
         for line in lines:
-            userList.append(line.split(':')[0])
+            if int(line.split(':')[2])>1000:
+                 #userList.append(line.split(':')[4].split(',')[2])
+                 if  line.split(':')[4] != 'guest':
+                    print(line.split(':')[0], line.split(':')[4].split(',')[2])
         return userList
 
     # Возвращает секцию со строками [название папки]-0, write list-1, read list-2, valid users-3
