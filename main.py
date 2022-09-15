@@ -3,23 +3,9 @@ import re, os
 
 
 def print_main():
-    user = 'usachev'
+
     parserQnap = ParserQnapSmb()
-    dataUser = parserQnap.getAllDataUser(user)
-    print(str (parserQnap.getFolders()))
-
     parserQnap.printMatrix()
-
-    # folders = parserQnap.getFolders()
-    # strRes = ''
-    # for usr in parserQnap.getUsers():
-    #     for folder in folders:
-    #         acc = parserQnap.isAccesUserToFolder(usr, folder)
-    #         # print(folder, acc)
-    #         strRes += ';' + str(acc)
-    #     print(usr, strRes)
-    #     strRes = ''
-
 
 class ParserQnapSmb:
     def __init__(self, filePathSmb='smb.conf', filePathPasswd='smbpasswd'):
