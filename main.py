@@ -28,7 +28,7 @@ class ParserQnapSmb:
         file.write(topStr)
         for usr in users:
             for folder in folders:
-                acc = self.isAccesUserToFolder(usr, folder)
+                acc = self.__isAccesUserToFolder(usr, folder)
                 # print(folder, acc)
                 strRes += ';' + str(acc)
             print(usr, strRes)
@@ -37,7 +37,7 @@ class ParserQnapSmb:
             strRes = ''
         file.close()
 
-    def isAccesUserToFolder(self, user, folder):
+    def __isAccesUserToFolder(self, user, folder):
 
         # acces: 0 - нет доступа к папке; -1 доступ запрещен; 1 - только чтение; 2 - запись
         acces = 0
