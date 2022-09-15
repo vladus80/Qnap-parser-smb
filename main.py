@@ -6,7 +6,7 @@ def print_main():
     user = 'usachev'
     parserQnap = ParserQnapSmb()
     dataUser = parserQnap.getAllDataUser(user)
-    print(dataUser)
+    print(str (parserQnap.getFolders()))
 
     parserQnap.printMatrix()
 
@@ -34,11 +34,11 @@ class ParserQnapSmb:
 
     def printMatrix(self):
 
-        file = open('usersAccs.csv', 'w+', encoding='windows-1251')
+        file = open('usersAccs.csv', 'w', encoding='windows-1251')
         folders = self.getFolders()
         users = self.getUsers()
         strRes = ''
-        topStr = ' ;'+str(folders).replace(',',';')+'\n'
+        topStr = ' ;'+str(folders).replace(', ',';').replace("'","").replace('[','').replace(']','')+'\n'# заголовок
         file.write(topStr)
         for usr in users:
             for folder in folders:
