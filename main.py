@@ -31,6 +31,7 @@ class ParserQnapSmb:
             print('Файлы ', 'не обнаружены')
             exit(0)
 
+
     def printMatrix(self):
 
         file = open('usersAccs.csv', 'w+', encoding='windows-1251')
