@@ -4,12 +4,17 @@ import re, os
 def print_main():
 
     parserQnap = ParserQnapSmb()
-    dataUser = parserQnap.getAllDataUser('kiriy')
+    dataUser = parserQnap.getAllDataUser('usachev')
     print(dataUser)
 
-    print(parserQnap.isAccesUserToFolder('kiriy', 'Томаровка'))
+    folders = parserQnap.getFolders()
 
-
+    strRes = ''
+    for folder in folders:
+        acc = parserQnap.isAccesUserToFolder('usachev', folder)
+        print(folder, acc)
+        strRes +=';'+ str (acc)
+    print(strRes)
 
 class ParserQnapSmb:
     def __init__(self, filePathSmb='smb.conf', filePathPasswd='smbpasswd'):
@@ -23,6 +28,7 @@ class ParserQnapSmb:
 
     def isAccesUserToFolder(self, user, folder):
 
+            # acces: 0 - нет доступа к папке; -1 доступ запрещен; 1 - только чтение; 2 - запись
             acces = 0
 
             userData = self.getAllDataUser(user)
@@ -40,7 +46,7 @@ class ParserQnapSmb:
                     if folder in invalidUser:
                         acces = -1
             return acces
-            # 0 - нет доступа к папке; -1 доступ запрещен; 1 - только чтение; 2 - запись
+
 
 
     # Возвращает  все данные  по пользователю
