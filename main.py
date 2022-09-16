@@ -5,9 +5,15 @@ import re, os
 def print_main():
 
     parserQnap = ParserQnapSmb()
-    print(len(parserQnap.getFolders()))
+    #print(len(parserQnap.getFolders()))
     print(parserQnap.getUsers())
-    #parserQnap.printMatrix()
+
+    # dd = parserQnap.getUsers()
+    # print(dd)
+    # for key in dd:
+    #     print(parserQnap.getAllDataUser(key))
+
+    parserQnap.printMatrix()
 
 class ParserQnapSmb:
     def __init__(self, filePathSmb='smb.conf', filePathPasswd='passwd'):
@@ -25,15 +31,15 @@ class ParserQnapSmb:
         folders = self.getFolders()
         users = self.getUsers()
         strRes = ''
-        topStr = ' ;'+str(folders).replace(', ',';').replace("'","").replace('[','').replace(']','')+'\n'# заголовок
+        topStr = ';;'+str(folders).replace(', ',';').replace("'","").replace('[','').replace(']','')+'\n'# заголовок
         file.write(topStr)
         for usr in users:
             for folder in folders:
                 acc = self.__isAccesUserToFolder(usr, folder)
                 # print(folder, acc)
                 strRes += ';' + str(acc)
-            print(usr, strRes)
-            file.write(usr+strRes+'\n')
+            print(usr, ';', users.get(usr), strRes)
+            file.write(usr+';'+users.get(usr)+strRes+'\n')
 
             strRes = ''
         file.close()
@@ -115,14 +121,15 @@ class ParserQnapSmb:
     # Возвращает список пользователей из smbpasswd
     def getUsers(self):
         lines = open(self.filePathPasswd, 'r', encoding='UTF-8').readlines()
-        userList = []
+
+        usrDict = {}
 
         for line in lines:
             if int(line.split(':')[2])>1000:
-                 #userList.append(line.split(':')[4].split(',')[2])
                  if  line.split(':')[4] != 'guest':
-                    print(line.split(':')[0], line.split(':')[4].split(',')[2])
-        return userList
+                    #print(line.split(':')[0], line.split(':')[4].split(',')[2])
+                    usrDict[line.split(':')[0]] = line.split(':')[4].split(',')[2]
+        return usrDict
 
     # Возвращает секцию со строками [название папки]-0, write list-1, read list-2, valid users-3
     # listSections - список секций
