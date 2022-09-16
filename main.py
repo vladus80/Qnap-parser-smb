@@ -3,47 +3,75 @@ import re, os
 
 
 def print_main():
-
     parserQnap = ParserQnapSmb()
-    #print(len(parserQnap.getFolders()))
-    print(parserQnap.getUsers())
-
-    # dd = parserQnap.getUsers()
-    # print(dd)
-    # for key in dd:
-    #     print(parserQnap.getAllDataUser(key))
-
     parserQnap.printMatrix()
 
+
 class ParserQnapSmb:
-    def __init__(self, filePathSmb='smb.conf', filePathPasswd='passwd'):
+    def __init__(self, filePathSmb='smb.conf', filePathPasswd='passwd', filePathShadow='shadow'):
 
         if os.path.exists(filePathSmb) & os.path.exists(filePathPasswd):
             self.filePathSmb = filePathSmb
             self.filePathPasswd = filePathPasswd
+            self.filePathShadow = filePathShadow
         else:
             print('Файлы ', 'не обнаружены')
             exit(0)
 
+    # Возвращает список пользователей из smbpasswd
+    def getUsers(self):
+
+        fPasswd = self.filePathPasswd
+        linesPasswd = open(fPasswd, 'r', encoding='UTF-8').readlines() # Читаем файл с пользователями
+        usrDict = {} # Словарь куда будем записывать данные о пользователе
+                     # структура - petrov{['Петров, Блок']}
+
+        for line in linesPasswd:
+            if int(line.split(':')[2]) > 1000: # Если > 1000 то поль-тель  не системный
+                if line.split(':')[4] != 'guest':  # и если он не гость
+                    userName = line.split(':')[0] # Логин -ключ словаря
+                    userFIO = line.split(':')[4].split(',')[2] # ФИО пользователя
+                    userStatus = self.isBlockUser(userName) # Статус блокировки
+                    usrDict[userName] = [userFIO, userStatus] # Добавляем в словарь список с данными (ФИО, Статус)
+                                                              # Сам ключ представляет данные Логин
+        return usrDict
+
+    # Возвращает статус (Блок или пустая строка), не заблокирован ли пользователь
+    def isBlockUser(self, user):
+
+        res = ''
+        fShadow = self.filePathShadow
+        linesShadow = open(fShadow, 'r', encoding='UTF-8').readlines()
+        for ln in linesShadow:
+            listData = ln.split(':')
+            if listData[0] == user:
+                if listData[1][0] == '!':
+                    res = 'Блок'
+                else:
+                    res = ''
+        return res
+
+    # Печатает в файл матрицу
     def printMatrix(self):
 
         file = open('usersAccs.csv', 'w', encoding='windows-1251')
         folders = self.getFolders()
         users = self.getUsers()
         strRes = ''
-        topStr = ';;'+str(folders).replace(', ',';').replace("'","").replace('[','').replace(']','')+'\n'# заголовок
+        topStr = 'Логин;ФИО;Статус;' + str(folders).replace(', ', ';').replace("'", "").replace('[', '').replace(']',
+                                                                                                  '') + '\n'  # заголовок
         file.write(topStr)
-        for usr in users:
+        for usr in users.keys():
             for folder in folders:
                 acc = self.__isAccesUserToFolder(usr, folder)
-                # print(folder, acc)
                 strRes += ';' + str(acc)
-            print(usr, ';', users.get(usr), strRes)
-            file.write(usr+';'+users.get(usr)+strRes+'\n')
+            print(usr, ';', users[usr][0], ';', users[usr][1], strRes)
+            file.write(usr + ';' + users[usr][0] + ';' + users[usr][1] + strRes + '\n')
 
             strRes = ''
         file.close()
 
+    # Возвращает статус пользователя к папке (Чтение, Запись, Нет доступа)
     def __isAccesUserToFolder(self, user, folder):
 
         # acces: 0 - нет доступа к папке; -1 доступ запрещен; 1 - только чтение; 2 - запись
@@ -118,18 +146,6 @@ class ParserQnapSmb:
         data = re.findall(r'\[(.*)\]', open(self.filePathSmb, 'r', encoding="UTF-8").read(), flags=re.MULTILINE)
         return data[1:]
 
-    # Возвращает список пользователей из smbpasswd
-    def getUsers(self):
-        lines = open(self.filePathPasswd, 'r', encoding='UTF-8').readlines()
-
-        usrDict = {}
-
-        for line in lines:
-            if int(line.split(':')[2])>1000:
-                 if  line.split(':')[4] != 'guest':
-                    #print(line.split(':')[0], line.split(':')[4].split(',')[2])
-                    usrDict[line.split(':')[0]] = line.split(':')[4].split(',')[2]
-        return usrDict
 
     # Возвращает секцию со строками [название папки]-0, write list-1, read list-2, valid users-3
     # listSections - список секций
