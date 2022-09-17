@@ -1,5 +1,6 @@
 # re2
 import re, os
+from progress.bar import IncrementalBar
 
 
 def print_main():
@@ -14,6 +15,11 @@ class ParserQnapSmb:
             self.filePathSmb = filePathSmb
             self.filePathPasswd = filePathPasswd
             self.filePathShadow = filePathShadow
+
+            self.fSmbRead = open(self.filePathSmb, 'r', encoding="UTF-8").read()
+            self.fShadowLines = open(self.filePathShadow, 'r', encoding="UTF-8").readlines()
+            self.fPasswdLines = open(self.filePathPasswd, 'r', encoding='UTF-8').readlines()
+
         else:
             print('Файлы ', 'не обнаружены')
             exit(0)
@@ -22,7 +28,7 @@ class ParserQnapSmb:
     def getUsers(self):
 
         fPasswd = self.filePathPasswd
-        linesPasswd = open(fPasswd, 'r', encoding='UTF-8').readlines() # Читаем файл с пользователями
+        linesPasswd = self.fPasswdLines # Читаем файл с пользователями
         usrDict = {} # Словарь куда будем записывать данные о пользователе
                      # структура - petrov{['Петров, Блок']}
 
@@ -40,8 +46,8 @@ class ParserQnapSmb:
     def isBlockUser(self, user):
 
         res = ''
-        fShadow = self.filePathShadow
-        linesShadow = open(fShadow, 'r', encoding='UTF-8').readlines()
+        #fShadow = self.filePathShadow
+        linesShadow = self.fShadowLines
         for ln in linesShadow:
             listData = ln.split(':')
             if listData[0] == user:
@@ -61,15 +67,19 @@ class ParserQnapSmb:
         topStr = 'Логин;ФИО;Статус;' + str(folders).replace(', ', ';').replace("'", "").replace('[', '').replace(']',
                                                                                                   '') + '\n'  # заголовок
         file.write(topStr)
+        print('Начинаем, ожидайте..')
+        bar = IncrementalBar('Работаю', max=len(users), suffix='%(percent)d%%', color='green') # Запускаем прогресс бар
         for usr in users.keys():
             for folder in folders:
                 acc = self.__isAccesUserToFolder(usr, folder)
                 strRes += ';' + str(acc)
-            print(usr, ';', users[usr][0], ';', users[usr][1], strRes)
+            #print(usr, ';', users[usr][0], ';', users[usr][1], strRes)
             file.write(usr + ';' + users[usr][0] + ';' + users[usr][1] + strRes + '\n')
-
+            bar.next()
             strRes = ''
         file.close()
+        bar.finish()
+        print('Готово')
 
     # Возвращает статус пользователя к папке (Чтение, Запись, Нет доступа)
     def __isAccesUserToFolder(self, user, folder):
@@ -143,7 +153,7 @@ class ParserQnapSmb:
 
     # Возвращает общие папки из smb.conf
     def getFolders(self):
-        data = re.findall(r'\[(.*)\]', open(self.filePathSmb, 'r', encoding="UTF-8").read(), flags=re.MULTILINE)
+        data = re.findall(r'\[(.*)\]', self.fSmbRead, flags=re.MULTILINE)
         return data[1:]
 
 
@@ -157,7 +167,7 @@ class ParserQnapSmb:
 
     # Возвращает список секций из файла
     def __getSections(self):
-        fileText = open(self.filePathSmb, 'r', encoding="UTF-8").read()
+        fileText = self.fSmbRead
         sections = fileText.split('\n\n')
         return sections
 
